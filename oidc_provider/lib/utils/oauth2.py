@@ -37,7 +37,6 @@ def protected_resource_view(scopes=[]):
     def wrapper(view):
         def view_wrapper(request,  *args, **kwargs):
             access_token = extract_access_token(request)
-
             try:
                 try:
                     kwargs['token'] = Token.objects.get(access_token=access_token)

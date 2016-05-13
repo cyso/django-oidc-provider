@@ -39,6 +39,8 @@ class TokenEndpoint(object):
         self.params.state = self.request.POST.get('state', '')
         self.params.scope = self.request.POST.get('scope', '')
         self.params.refresh_token = self.request.POST.get('refresh_token', '')
+        self.params.username = self.request.POST.get('username', '')
+        self.params.password = self.request.POST.get('password', '')
 
         # PKCE parameters.
         self.params.code_verifier = self.request.POST.get('code_verifier')
@@ -122,6 +124,17 @@ class TokenEndpoint(object):
                 logger.debug('[Token] Refresh token does not exist: %s', self.params.refresh_token)
                 raise TokenError('invalid_grant')
 
+        elif self.params.grant_type == 'password':
+            from django.contrib.auth import authenticate
+            user = authenticate(username=self.params.username, password=self.params.password)
+            if not user:
+                raise TokenError('Invalid user credentials')
+
+            # todo: scope must be a list, but simply putting the self.params.scope in the list might be wrong
+            self.token = create_token(user, self.client, {}, [self.params.scope])
+            self.token.save()
+
+
         else:
             logger.debug('[Token] Invalid grant type: %s', self.params.grant_type)
             raise TokenError('unsupported_grant_type')
@@ -131,6 +144,8 @@ class TokenEndpoint(object):
             return self.create_code_response_dic()
         elif self.params.grant_type == 'refresh_token':
             return self.create_refresh_response_dic()
+        elif self.params.grant_type == 'password':
+            return {'access_token': self.token.access_token}
 
     def create_code_response_dic(self):
         if self.code.is_authentication:

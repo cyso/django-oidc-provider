@@ -131,7 +131,6 @@ class TokenView(View):
     def post(self, request, *args, **kwargs):
 
         token = TokenEndpoint(request)
-
         try:
             token.validate_params()
 
